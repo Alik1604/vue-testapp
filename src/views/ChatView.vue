@@ -7,7 +7,9 @@ import { ref } from 'vue'
 
 const auth = useAuthStore()
 const message = ref('')
+const search = ref('')
 const selectedChat = ref('')
+const chats = ref<any[]>([])
 
 const socket = io('http://localhost:3000', {
   query: {
@@ -27,7 +29,11 @@ socket.on('message', (data: any) => {
   messages.value.push(data)
 })
 
-const chats = ref<any[]>([])
+socket.on('chatCreated', (data: any) => {
+  chats.value.push(data)
+  console.log(data)
+})
+
 const getChats = async () => {
   chats.value = await getAllChats(auth.user?.id as string)
   getChatName()
@@ -48,6 +54,7 @@ function sentMessage() {
     sender: auth.user?.id,
     timestamp: Date.now()
   })
+  message.value = ''
 }
 
 function getMessages(item: any) {
@@ -63,11 +70,33 @@ function getMessages(item: any) {
   )
 }
 
+function createChat() {
+  socket.emit(
+    'createChat',
+    {
+      userId: auth.user?.id,
+      username: search.value
+    },
+    (data: any) => {
+      console.log(data)
+    }
+  )
+}
 </script>
 
 <template>
   <div style="display: flex; flex-direction: row">
     <v-list density="compact" style="min-width: 200px">
+      <v-text-field
+        style="margin-left: 20px"
+        rounded="full"
+        v-model="search"
+        label="search"
+        :append-inner-icon="'mdi-send'"
+        variant="outlined"
+        type="text"
+        @click:append-inner="createChat"
+      ></v-text-field>
       <v-list-subheader>Students</v-list-subheader>
 
       <v-list-item
