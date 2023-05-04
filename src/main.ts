@@ -14,6 +14,10 @@ import { aliases, mdi } from 'vuetify/lib/iconsets/mdi'
 
 import '@mdi/font/css/materialdesignicons.css' // Ensure you are using css-loader
 import '@fortawesome/fontawesome-free/css/all.css' // Ensure your project is capable of handling css files
+import { useAuthStore } from './stores/auth'
+
+import { reactive } from 'vue'
+import { io } from 'socket.io-client'
 
 const vuetify = createVuetify({
   icons: {
@@ -35,3 +39,6 @@ app.use(router)
 app.use(vuetify)
 
 app.mount('#app')
+
+
+

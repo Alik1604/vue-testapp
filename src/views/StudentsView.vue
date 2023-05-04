@@ -1,29 +1,19 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useField, useForm } from 'vee-validate'
+import { getAllStudents, createStudent, updateStudent, deleteStudent } from '@/api/studenst'
 let id = 0
-const editId = ref<number|undefined>(undefined)
+const editId = ref<number | undefined>(undefined)
 const dialog = ref(false)
 const editDialog = ref(false)
 const valid = ref(false)
-const students = ref([
-  {
-    id: id++,
-    name: 'Frozen Yogurt',
-    group: 'ПЗ-22',
-    gender: 'M',
-    birthday: '12.12.1990',
-    status: 'Online'
-  },
-  {
-    id: id++,
-    name: 'Frozen Yogurt',
-    group: 'ПЗ-22',
-    gender: 'M',
-    birthday: '12.12.1990',
-    status: 'Online'
-  }
-])
+const students = ref<any[]>()
+const error = ref()
+
+const getStudents = async () => {
+  students.value = await getAllStudents()
+}
+getStudents()
 
 const { handleSubmit, handleReset } = useForm({
   validationSchema: {
@@ -61,22 +51,27 @@ const birthday = useField('birthday')
 const gender = useField('gender')
 const status = useField('status')
 
-const submit = handleSubmit((values:any) => {
-  students.value.push({ id: id++, ...values })
-  dialog.value = false
+const submit = handleSubmit(async (values: any) => {
+  try {
+    await createStudent(values)
+    dialog.value = false
+    getStudents()
+  } catch (e: any) {
+    error.value = e?.response?.data?.message
+  }
 })
 
-const editSubmit = handleSubmit((values:any) => {
-  students.value.splice(
-    students.value.indexOf(students.value.find((e) => e.id === editId.value) as any),
-    1,
-    {
-      id: editId.value,
-      ...values
-    }
-  )
+const editSubmit = handleSubmit(async (values: any) => {
+  await updateStudent(editId.value, values)
   editDialog.value = false
+  getStudents()
 })
+
+const handleDelete = async (values: any) => {
+  await deleteStudent(values)
+  editDialog.value = false
+  getStudents()
+}
 </script>
 
 <template>
@@ -124,11 +119,13 @@ const editSubmit = handleSubmit((values:any) => {
 
             <v-select
               v-model="status.value.value"
-              :items="['Online', 'Offline']"
+              :items="['Active', 'Inactive']"
               :error-messages="status.errorMessage.value"
               label="Status"
               required
             ></v-select>
+
+            <div style="color: red; margin-bottom: 10px">{{ error }}</div>
 
             <v-btn class="me-4 mt-2" style="text-transform: none" type="submit"> Save </v-btn>
 
@@ -179,7 +176,7 @@ const editSubmit = handleSubmit((values:any) => {
 
             <v-select
               v-model="status.value.value"
-              :items="['Online', 'Offline']"
+              :items="['Active', 'Inactive']"
               :error-messages="status.errorMessage.value"
               label="Status"
               required
@@ -237,7 +234,11 @@ const editSubmit = handleSubmit((values:any) => {
               >Edit</v-btn
             >
             <v-btn
-              @click="students.splice(students.indexOf(item), 1)"
+              @click="
+                () => {
+                  handleDelete(item.id)
+                }
+              "
               style="border: 1px solid black; text-transform: none"
               variant="flat"
               >Delete</v-btn
